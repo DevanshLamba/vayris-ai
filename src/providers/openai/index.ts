@@ -105,13 +105,7 @@ export class OpenAICompatibleProvider implements ModelProvider {
     // Handle generic reasoning mode for OpenAI-compatible providers
     let formattedMessages = this.formatMessages(messages);
     if (options?.reasoningMode === 'fast') {
-       // Instruct thinking models to skip thinking tokens for fast responses
-       if (!formattedMessages.some(m => m.role === 'system' && m.content.includes('Respond naturally'))) {
-         formattedMessages = [
-           { role: 'system', content: 'You must provide a direct response without any internal reasoning, chain of thought, or <think> tags. Be extremely concise.' },
-           ...formattedMessages
-         ];
-       }
+       // We rely solely on the orchestrator's fast system prompt.
     } else if (options?.reasoningMode === 'deep') {
        formattedMessages = [
          { role: 'system', content: 'You must engage in deep, rigorous, multi-step chain of thought reasoning before providing your final answer. Think step-by-step.' },
@@ -180,14 +174,7 @@ export class OpenAICompatibleProvider implements ModelProvider {
     // Handle generic reasoning mode for OpenAI-compatible providers
     let formattedMessages = this.formatMessages(messages);
     if (options?.reasoningMode === 'fast') {
-       // We only inject if it's not already handled by a dedicated system prompt.
-       // For direct chat, orchestrator already sends a concise system prompt.
-       if (!formattedMessages.some(m => m.role === 'system' && m.content.includes('Respond naturally'))) {
-         formattedMessages = [
-           { role: 'system', content: 'You must provide a direct response without any internal reasoning, chain of thought, or <think> tags. Be extremely concise.' },
-           ...formattedMessages
-         ];
-       }
+       // We rely solely on the orchestrator's fast system prompt.
     } else if (options?.reasoningMode === 'deep') {
        formattedMessages = [
          { role: 'system', content: 'You must engage in deep, rigorous, multi-step chain of thought reasoning before providing your final answer. Think step-by-step.' },
