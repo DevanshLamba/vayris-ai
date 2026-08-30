@@ -1,3 +1,11 @@
+/*
+ * Copyright 2026 Devansh Lamba
+ *
+ * Licensed under the Apache License, Version 2.0.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
 import React, { useEffect, useState } from 'react';
 import { X, Save, Key, Globe, Cpu, Folder, Volume2, Mic, Settings2 } from 'lucide-react';
 
@@ -127,6 +135,13 @@ export const SettingsModal: React.FC<{ onClose: () => void, voice: any }> = ({ o
               </div>
             </>
           )}
+
+          {/* Copyright Attribution */}
+          <div className="mt-8 pt-6 border-t border-gray-800/80 text-center space-y-1">
+            <div className="text-sm font-semibold text-gray-300">Vayris</div>
+            <div className="text-xs text-gray-500">Copyright © 2026 Devansh Lamba</div>
+            <div className="text-xs text-gray-600">Licensed under Apache License 2.0</div>
+          </div>
         </div>
       </div>
     </div>

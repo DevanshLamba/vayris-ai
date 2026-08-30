@@ -1,3 +1,11 @@
+/*
+ * Copyright 2026 Devansh Lamba
+ *
+ * Licensed under the Apache License, Version 2.0.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';

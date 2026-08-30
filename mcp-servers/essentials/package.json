@@ -7,7 +7,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "description": "",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0"

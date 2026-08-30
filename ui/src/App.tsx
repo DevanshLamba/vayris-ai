@@ -1,3 +1,11 @@
+/*
+ * Copyright 2026 Devansh Lamba
+ *
+ * Licensed under the Apache License, Version 2.0.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Shield, HardDrive, List, Zap, MessageSquare, Activity, CheckCircle, XCircle } from 'lucide-react';
 import { VayrisOrb } from './components/VayrisOrb';

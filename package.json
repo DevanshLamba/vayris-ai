@@ -17,7 +17,7 @@
     "vayris"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "cors": "^2.8.6",

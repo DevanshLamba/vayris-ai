@@ -1,5 +1,9 @@
 # Vayris
 
+> **Open Source — Apache License 2.0**
+>
+> Copyright © 2026 Devansh Lamba.
+
 **Vayris** is a local-first AI assistant that combines deterministic computer control, low-latency conversation, and deep agentic reasoning.
 
 Instead of relying entirely on a slow, expensive cloud model to do everything, Vayris intelligently splits workloads:
@@ -188,3 +192,34 @@ The public GitHub repository is simply the product source code.
 ---
 
 *Vayris is a robust, local-first multi-agent ecosystem. Customize your tools, swap your models, and build.*
+
+---
+
+## License
+
+Vayris is open-source software licensed under the Apache License 2.0.
+
+Copyright 2026 Devansh Lamba.
+
+The Apache License 2.0 permits use, modification, distribution, and commercial use subject to its terms.
+
+The Vayris name, logo, branding, and visual identity are separate from the software license and are not granted as trademark rights by Apache 2.0.
+
+---
+
+## Branding
+
+The Vayris name, logo, trademarks (if any), branding, and original visual identity are not granted as trademark rights by the Apache License 2.0.
+
+Use of Vayris branding must not imply official endorsement, affiliation, or sponsorship unless authorized.
+
+---
+
+## Copyright & Attribution
+
+Copyright 2026 Devansh Lamba.
+
+Vayris is distributed under the Apache License 2.0.
+
+When redistributing the software or substantial portions of it, users must comply with the copyright, license, and NOTICE requirements of Apache 2.0.
+
