@@ -426,6 +426,13 @@ export default function App() {
       {showCapabilities && <CapabilitiesModal onClose={() => setShowCapabilities(false)} />}
       {showHistory && <TaskHistoryModal history={taskHistory} onClose={() => setShowHistory(false)} />}
       {permissionReq && <PermissionModal toolName={permissionReq.tool} args={permissionReq.arguments} onRespond={handlePermission} />}
+
+      {/* Layer 8: Persistent Copyright */}
+      <div className="fixed bottom-3 right-4 z-50 pointer-events-none opacity-30 hover:opacity-100 transition-opacity">
+        <span className="text-[10px] font-mono text-white/50 tracking-widest select-none drop-shadow-md">
+          &copy; 2026 Devansh Lamba
+        </span>
+      </div>
     </main>
   );
 }

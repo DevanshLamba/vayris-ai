@@ -139,8 +139,8 @@ export const SettingsModal: React.FC<{ onClose: () => void, voice: any }> = ({ o
           {/* Copyright Attribution */}
           <div className="mt-8 pt-6 border-t border-gray-800/80 text-center space-y-1">
             <div className="text-sm font-semibold text-gray-300">Vayris</div>
-            <div className="text-xs text-gray-500">Copyright © 2026 Devansh Lamba</div>
-            <div className="text-xs text-gray-600">Licensed under Apache License 2.0</div>
+            <div className="text-xs text-gray-500">&copy; 2026 Devansh Lamba</div>
+            <div className="text-xs text-gray-600">Open Source - Apache License 2.0</div>
           </div>
         </div>
       </div>
