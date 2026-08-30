@@ -210,7 +210,7 @@ export class AgentOrchestrator {
       }
 
       // 2. DIRECT CONVERSATION VS DEEP TASK (Model Routing)
-      const isDirectChat = /^(hello|hi|hey|how are you|tell me|explain(?!.*\b(file|folder|project|browser|open)\b)|what is(?!.*\b(file|folder|project|browser)\b)|what's|what are|why is|why are|give me(?!.*\b(file|folder)\b)|rewrite|translate|summarize|thanks|thank you|good morning|good night|make this|can you help me|that's cool)/i.test(lower) && !/(open|close|launch|run|search|find|check|read|inspect|go to|download)/i.test(lower);
+      const isDirectChat = /^(hello|hi|hey|how are you|how is|who is|who are|where is|when is|are you|do you|can you|i want|i asked|i think|tell me|explain(?!.*\b(file|folder|project|browser|open)\b)|what is(?!.*\b(file|folder|project|browser)\b)|what's|what are|why is|why are|give me(?!.*\b(file|folder)\b)|rewrite|translate|summarize|thanks|thank you|good morning|good night|make this|can you help me|that's cool)/i.test(lower) && !/(open|close|launch|run|search|find|check|read|inspect|go to|download)/i.test(lower);
       
       const shouldRunDirect = overrideMode === 'FAST' ? true : (overrideMode === 'DEEP' ? false : (isDirectChat || isNameOnly));
 
