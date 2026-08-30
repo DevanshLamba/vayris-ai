@@ -72,7 +72,7 @@ export default function App() {
     if (!text.trim() || !socket) return;
     console.log('[UI] sending run_task:', text);
     setMessages(prev => [...prev, { id: Math.random().toString(), role: 'user', content: text }]);
-    socket.send(JSON.stringify({ type: 'run_task', goal: text }));
+    socket.send(JSON.stringify({ type: 'run_task', goal: text, mode }));
     setOrbState('THINKING');
   };
 
