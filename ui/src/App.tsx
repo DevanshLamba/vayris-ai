@@ -103,7 +103,8 @@ export default function App() {
     const connect = () => {
       if (isUnmounted) return;
       console.log('[UI] connecting');
-      const ws = new WebSocket('ws://localhost:3000');
+      const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3000`;
+      const ws = new WebSocket(wsUrl);
       activeWs = ws;
       
       ws.onopen = () => {
