@@ -30,6 +30,7 @@ import { useVoiceIntegration } from './hooks/useVoiceIntegration';
 
 export default function App() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [mode, setMode] = useState<'AUTO'|'FAST'|'DEEP'>('AUTO');
   const [connected, setConnected] = useState(false);
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -79,7 +80,6 @@ export default function App() {
   const voice = useVoiceIntegration(handleFinalTranscript);
 
   const [greetingText, setGreetingText] = useState('');
-  const [mode, setMode] = useState<'AUTO'|'FAST'|'DEEP'>('AUTO');
   const [isCancelling, setIsCancelling] = useState(false);
   const hasGreetedRef = useRef(false);
   
