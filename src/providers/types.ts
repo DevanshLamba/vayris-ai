@@ -56,6 +56,7 @@ export interface ModelProvider {
   capabilities: ModelCapabilities;
   initialize(config: ProviderConfig): void;
   checkConnection(): Promise<void>;
+  checkModelAvailability?(modelNames: string[]): Promise<string[]>;
   generateResponse(messages: Message[], tools?: ToolDefinition[], options?: ModelGenerateOptions): Promise<Message>;
   generateResponseStream?(messages: Message[], tools?: ToolDefinition[], options?: ModelGenerateOptions): AsyncGenerator<StreamEvent, void, unknown>;
 }

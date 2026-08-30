@@ -34,6 +34,26 @@ export class OpenAICompatibleProvider implements ModelProvider {
     }
   }
 
+  async checkModelAvailability(modelNames: string[]): Promise<string[]> {
+    try {
+      const url = `${this.config.baseUrl}/models`;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (this.config.apiKey) headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+      
+      const response = await fetch(url, { method: 'GET', headers });
+      if (!response.ok) return [];
+      
+      const data = await response.json();
+      const availableModels = data.data?.map((m: any) => m.id) || [];
+      
+      const missing = modelNames.filter(m => !availableModels.includes(m));
+      return missing;
+    } catch (e) {
+      // If we can't fetch models list for some reason, just return empty to not block startup
+      return [];
+    }
+  }
+
   private formatMessages(messages: Message[]) {
     return messages.map(m => {
       const out: any = { role: m.role };

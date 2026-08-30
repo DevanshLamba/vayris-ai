@@ -141,7 +141,16 @@ async function main() {
     process.exit(1);
   }
 
-  const modelName = process.env.VAYRIS_MODEL || 'gpt-4o-mini';
+  const fastModel = process.env.FAST_MODEL;
+  const deepModel = process.env.DEEP_MODEL;
+  
+  if (!fastModel || !deepModel) {
+    console.error('\nError: FAST_MODEL and DEEP_MODEL must be configured in your .env file.');
+    console.error('See .env.example for an example configuration.\n');
+    process.exit(1);
+  }
+
+  const modelName = fastModel;
   
   provider.initialize({
     model: modelName,
@@ -149,13 +158,26 @@ async function main() {
     baseUrl: process.env.LOCAL_MODEL_BASE_URL || process.env.VAYRIS_BASE_URL
   });
 
-  console.log(`\nProvider: ${providerName}\nModel: ${modelName}\nStatus: verifying connection...`);
+  console.log(`\nProvider: ${providerName}\nStatus: verifying connection...`);
   try {
     await provider.checkConnection();
-    console.log('Status: configured\n');
+    console.log('Status: connected\n');
+    
+    if (provider.checkModelAvailability) {
+      console.log(`Verifying models...`);
+      const missing = await provider.checkModelAvailability([fastModel, deepModel]);
+      if (missing.length > 0) {
+        console.error(`\nError: The following models are missing from your provider (${providerName}):`);
+        missing.forEach((m: string) => console.error(`  - ${m}`));
+        console.error('\nPlease pull or install these models before continuing, or update your .env to use models that are currently available.');
+        console.error('Example: ollama pull ' + missing[0] + '\n');
+        process.exit(1);
+      }
+      console.log(`Models verified: ${fastModel} (FAST), ${deepModel} (DEEP)\n`);
+    }
   } catch (e: any) {
     console.log(`Status: error (${e.message})\n`);
-    console.log('Please check your provider configuration.\n');
+    console.log('Please check your provider configuration (baseUrl, API key, etc).\n');
     process.exit(1);
   }
 
@@ -172,8 +194,8 @@ async function main() {
     provider,
     toolRegistry,
     permissionManager,
-    fastModel: process.env.FAST_MODEL || 'llama3.2:1b',
-    deepModel: process.env.DEEP_MODEL || 'qwen3:4b'
+    fastModel,
+    deepModel
   });
 
   const toolContext: ToolContext = {
