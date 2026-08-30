@@ -159,11 +159,31 @@ export function useVoiceIntegration(onFinalTranscript: (text: string) => void) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = config.rate;
       
+      let selectedVoice = null;
+      const voices = synthRef.current.getVoices();
+
       if (config.voiceURI) {
-        const voices = synthRef.current.getVoices();
-        const selected = voices.find(v => v.voiceURI === config.voiceURI);
-        if (selected) utterance.voice = selected;
+        selectedVoice = voices.find(v => v.voiceURI === config.voiceURI);
       }
+      
+      // Fallback to the best Jarvis-inspired premium male AI voice
+      if (!selectedVoice) {
+        const preferred = [
+          'Google UK English Male',
+          'Microsoft George - English (United Kingdom)',
+          'Microsoft Mark - English (United States)',
+          'Microsoft David - English (United States)'
+        ];
+        for (const name of preferred) {
+          selectedVoice = voices.find(v => v.name === name);
+          if (selectedVoice) break;
+        }
+      }
+
+      if (selectedVoice) utterance.voice = selectedVoice;
+      
+      // Slightly lower pitch for a calm, confident, warm baritone feel
+      utterance.pitch = 0.95;
       
       utterance.onend = () => processQueue();
       utterance.onerror = () => processQueue();
