@@ -107,6 +107,7 @@ export default function App() {
     let reconnectTimer: any;
     let activeWs: WebSocket | null = null;
     let isUnmounted = false;
+    let activeTaskHasStreamed = false;
     
     const connect = () => {
       if (isUnmounted) return;
@@ -158,7 +159,7 @@ export default function App() {
           });
           
           voice.finalizeStream();
-          if (voice.config.voiceEnabled && !voice.isSpeaking && response.trim() && !messages[messages.length-1]?.content.trim()) {
+          if (voice.config.voiceEnabled && !activeTaskHasStreamed && response.trim()) {
               // fallback if stream wasn't used
               voice.feedStream(response + '. ');
               voice.finalizeStream();
@@ -175,12 +176,14 @@ export default function App() {
           if (!taskEvent) return;
           
           if (taskEvent.type === 'TASK_STARTED') {
+            activeTaskHasStreamed = false;
             const taskId = taskEvent.taskId || taskEvent.data?.id || Math.random().toString();
             const goal = taskEvent.data?.goal || 'Task';
             setActiveTask({ id: taskId, goal, status: 'RUNNING', events: [] });
             setOrbState('THINKING');
             setMessages(prev => [...prev, { id: `stream-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, role: 'assistant', content: '' }]);
           } else if (taskEvent.type === 'MESSAGE_DELTA') {
+            activeTaskHasStreamed = true;
             let chunk = taskEvent.data?.content || '';
             // Basic heuristic to hide raw tool JSON or XML if leaked by local models
             if (chunk.includes('<tool_call>')) chunk = chunk.split('<tool_call>')[0];
