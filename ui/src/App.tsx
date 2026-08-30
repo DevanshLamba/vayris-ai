@@ -428,8 +428,8 @@ export default function App() {
       {permissionReq && <PermissionModal toolName={permissionReq.tool} args={permissionReq.arguments} onRespond={handlePermission} />}
 
       {/* Layer 8: Persistent Copyright */}
-      <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-30 hover:opacity-100 transition-opacity">
-        <span className="text-[10px] font-mono text-white/50 tracking-widest select-none drop-shadow-md">
+      <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+        <span className="text-[10px] font-mono text-indigo-300/75 tracking-widest select-none drop-shadow-[0_0_5px_rgba(165,180,252,0.4)]">
           &copy; 2026 Devansh Lamba
         </span>
       </div>
