@@ -80,6 +80,16 @@ graph TD
 
 ---
 
+## 📸 Interface Preview
+
+Vayris features a highly atmospheric, glassmorphic 3D interface that provides real-time telemetry on model states (Fast vs. Deep) and system activity.
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/vayris-preview.jpg" alt="Vayris AI Interface Preview" width="800" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+</div>
+
+---
+
 ## 📂 Ecosystem & Repository Structure
 
 To support a wide array of deployment environments, Vayris AI is structured as a monorepo containing two distinct clients powered by the same core architecture.
