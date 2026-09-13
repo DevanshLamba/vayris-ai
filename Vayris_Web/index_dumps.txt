@@ -1,0 +1,807 @@
+Created At: 2026-09-03T19:10:45+05:30
+Completed At: 2026-09-03T19:10:45+05:30
+File Path: `file:///e:/Jarvis/src/index.ts`
+Total Lines: 316
+Total Bytes: 11413
+Showing lines 1 to 316
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: /*
+2:  * Copyright 2026 Devansh Lamba
+3:  *
+4:  * Licensed under the Apache License, Version 2.0.
+5:  * You may obtain a copy of the License at
+6:  *
+7:  * http://www.apache.org/licenses/LICENSE-2.0
+8:  */
+9: import dotenv from 'dotenv';
+10: import fs from 'fs';
+11: import path from 'path';
+12: import * as readline from 'readline';
+13: 
+14: import { AgentOrchestrator } from './core/orchestrator';
+15: import { OpenAICompatibleProvider } from './providers/openai';
+16: import { providerRegistry } from './providers/registry';
+17: import { toolRegistry } from './tools/registry';
+18: import { SaveMemoryTool, SearchMemoryTool } from './tools/native/memoryTools';
+19: import { ToolContext } from './tools/types';
+20: import { MCPManager } from './mcp/manager';
+21: import { DefaultPermissionManager } from './core/permissions';
+22: import { ServerPermissionManager } from './core/server_permissions';
+23: import { VayrisServer } from './server';
+24: import { SQLiteMemoryStore } from './memory/store';
+25: import { SQLiteVectorStore } from './rag/storage';
+26: import { RagService } from './rag/service';
+27: import { RagIngester } from './rag/ingestion';
+28: import sqlite3 from 'sqlite3';
+29: import { open } from 'sqlite';
+30: 
+31: import { FileSystemSecurity } from './tools/native/filesystem/utils';
+32: import { ListDirectoryTool } from './tools/native/filesystem/list_directory';
+33: import { ReadFileTool } from './tools/native/filesystem/read_file';
+34: import { SearchFilesTool } from './tools/native/filesystem/search_files';
+35: import { WriteFileTool } from './tools/native/filesystem/write_file';
+36: import { DeleteFileTool } from './tools/native/filesystem/delete_file';
+37: import { SystemInfoTool } from './tools/native/system/system_info';
+38: import { SystemTimeTool } from './tools/native/system/system_time';
+39: import { OpenApplicationTool } from './tools/native/applications/open_application';
+40: 
+41: import { browserManager } from './browser/manager';
+42: import { 
+43:   BrowserOpenTool, BrowserReadPageTool, BrowserFindTool, 
+44:   BrowserClickTool, BrowserTypeTool, BrowserScreenshotTool, BrowserGoBackTool 
+45: } from './tools/native/browser/browser_tools';
+46: 
+47: import {
+48:   GitStatusTool, GitDiffTool, ProjectInfoTool, RunTestsTool, RunBuildTool
+49: } from './tools/native/developer/developer_tools';
+50: 
+51: // Load environment variables
+52: dotenv.config();
+53: 
+54: async function main() {
+55:   console.log('Initializing VAYRIS...');
+56: 
+57:   // Pre-index installed Windows applications in the background
+58:   const { warmUpAppCache } = require('./tools/native/applications/launcher');
+59:   warmUpAppCache();
+60: 
+61:   // 0. Initialize Security & Storage
+62:   const allowedRoots = [process.env.VAYRIS_WORKSPACE || process.cwd()];
+63:   const fsSecurity = new FileSystemSecurity(allowedRoots);
+64:   
+65:   const memoryDbPath = path.resolve(process.cwd(), 'vayris_memory.db');
+66:   const memoryStore = new SQLiteMemoryStore(memoryDbPath);
+67: 
+68:   const ragDbPath = path.resolve(process.cwd(), 'vayris_rag.db');
+69:   const ragDb = await open({
+70:     filename: ragDbPath,
+71:     driver: sqlite3.Database
+72:   });
+73:   const vectorStore = new SQLiteVectorStore(ragDb);
+74:   await vectorStore.initialize();
+75:   // 1. Initialize native tools
+76:   // FileSystem
+77:   toolRegistry.register(new ListDirectoryTool(fsSecurity));
+78:   toolRegistry.register(new ReadFileTool(fsSecurity));
+79:   toolRegistry.register(new SearchFilesTool(fsSecurity));
+80:   toolRegistry.register(new WriteFileTool(fsSecurity));
+81:   toolRegistry.register(new DeleteFileTool(fsSecurity));
+82:   
+83:   // System
+84:   toolRegistry.register(new SystemInfoTool());
+85:   toolRegistry.register(new SystemTimeTool());
+86:   
+87:   const { CaptureScreenTool } = require('./tools/native/system/capture_screen');
+88:   const { AnalyzeImageTool } = require('./tools/native/system/analyze_image');
+89:   toolRegistry.register(new CaptureScreenTool());
+90:   toolRegistry.register(new AnalyzeImageTool());
+91:   
+92:   // Applications
+93:   toolRegistry.register(new OpenApplicationTool());
+94: 
+95:   // Browser
+96:   toolRegistry.register(new BrowserOpenTool(browserManager));
+97:   toolRegistry.register(new BrowserReadPageTool(browserManager));
+98:   toolRegistry.register(new BrowserFindTool(browserManager));
+99:   toolRegistry.register(new BrowserClickTool(browserManager));
+100:   toolRegistry.register(new BrowserTypeTool(browserManager));
+101:   toolRegistry.register(new BrowserScreenshotTool(browserManager));
+102:   toolRegistry.register(new BrowserGoBackTool(browserManager));
+103:   const { BrowserCloseTool } = await import('./tools/native/browser/browser_tools');
+104:   toolRegistry.register(new BrowserCloseTool(browserManager));
+105: 
+106:   // Developer
+107:   toolRegistry.register(new GitStatusTool(fsSecurity));
+108:   toolRegistry.register(new GitDiffTool(fsSecurity));
+109:   toolRegistry.register(new ProjectInfoTool(fsSecurity));
+110:   toolRegistry.register(new RunTestsTool(fsSecurity));
+111:   toolRegistry.register(new RunBuildTool(fsSecurity));
+112:   
+113:   // Memory
+114:   toolRegistry.register(new SaveMemoryTool(memoryStore));
+115:   toolRegistry.register(new SearchMemoryTool(memoryStore));
+116: 
+117:   // Productivity
+118:   const { ProductivityStorage } = require('./tools/native/productivity/storage');
+119:   await ProductivityStorage.getInstance().initialize();
+120:   const { productivityTools } = require('./tools/native/productivity/tools');
+121:   for (const t of productivityTools) toolRegistry.register(t);
+122:   
+123:   const { ProductivityScheduler } = require('./tools/native/productivity/scheduler');
+124:   ProductivityScheduler.getInstance().start();
+125: 
+126:   // 2. Initialize MCP Manager and load external tools
+127:   const mcpManager = new MCPManager(toolRegistry);
+128:   
+129:   const mcpConfigPath = path.resolve(process.cwd(), 'mcp.config.json');
+130:   if (fs.existsSync(mcpConfigPath)) {
+131:     try {
+132:       console.log('Loading MCP servers from configuration...');
+133:       const configData = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
+134:       
+135:       if (configData.mcpServers) {
+136:         for (const [name, serverConfig] of Object.entries<any>(configData.mcpServers)) {
+137:           await mcpManager.registerServer({
+138:             name,
+139:             command: serverConfig.command,
+140:             args: serverConfig.args,
+141:             env: serverConfig.env,
+142:           });
+143:         }
+144:       }
+145:     } catch (error: any) {
+146:       console.warn(`Warning: Failed to load MCP configuration: ${error.message}`);
+147:     }
+148:   } else {
+149:     console.log('No mcp.config.json found. Skipping MCP initialization.');
+150:   }
+151: 
+152:   // 3. Initialize provider
+153:   const providerName = process.env.VAYRIS_PROVIDER;
+154:   if (!providerName) {
+155:     console.log('\nNo model provider is configured.');
+156:     console.log('Configure the required environment variables (VAYRIS_PROVIDER, VAYRIS_MODEL, etc.) before starting Vayris.\n');
+157:     process.exit(1);
+158:   }
+159: 
+160:   // Register providers
+161:   providerRegistry.register(new OpenAICompatibleProvider());
+162:   const { GeminiProvider } = require('./providers/gemini/index');
+163:   providerRegistry.register(new GeminiProvider());
+164: 
+165:   let provider: any;
+166:   try {
+167:     provider = providerRegistry.getProvider(providerName);
+168:   } catch (e: any) {
+169:     console.log(`\nError: ${e.message}\n`);
+170:     process.exit(1);
+171:   }
+172: 
+173:   const fastModel = process.env.FAST_MODEL;
+174:   const deepModel = process.env.DEEP_MODEL;
+175:   
+176:   if (!fastModel || !deepModel) {
+177:     console.error('\nError: FAST_MODEL and DEEP_MODEL must be configured in your .env file.');
+178:     console.error('See .env.example for an example configuration.\n');
+179:     process.exit(1);
+180:   }
+181: 
+182:   const modelName = fastModel;
+183:   
+184:   provider.initialize({
+185:     model: modelName,
+186:     apiKey: process.env.VAYRIS_API_KEY,
+187:     baseUrl: process.env.LOCAL_MODEL_BASE_URL || process.env.VAYRIS_BASE_URL
+188:   });
+189: 
+190:   console.log(`\nProvider: ${providerName}\nStatus: verifying connection...`);
+191:   try {
+192:     await provider.checkConnection();
+193:     console.log('Status: connected\n');
+194:     
+195:     if (provider.checkModelAvailability) {
+196:       console.log(`Verifying models...`);
+197:       const missing = await provider.checkModelAvailability([fastModel, deepModel]);
+198:       if (missing.length > 0) {
+199:         console.error(`\nError: The following models are missing from your provider (${providerName}):`);
+200:         missing.forEach((m: string) => console.error(`  - ${m}`));
+201:         console.error('\nPlease pull or install these models before continuing, or update your .env to use models that are currently available.');
+202:         console.error('Example: ollama pull ' + missing[0] + '\n');
+203:         process.exit(1);
+204:       }
+205:       console.log(`Models verified: ${fastModel} (FAST), ${deepModel} (DEEP)\n`);
+206:     }
+207:   } catch (e: any) {
+208:     console.log(`Status: error (${e.message})\n`);
+209:     console.log('Please check your provider configuration (baseUrl, API key, etc).\n');
+210:     process.exit(1);
+211:   }
+212: 
+213:   // 4. Interactive CLI loop setup
+214:   const rl = readline.createInterface({
+215:     input: process.stdin,
+216:     output: process.stdout
+217:   });
+218: 
+219:   // 5. Initialize Server Permission Manager
+220:   const permissionManager = new ServerPermissionManager();
+221: 
+222:   const ragService = new RagService(vectorStore, provider, process.env.RAG_EMBEDDING_MODEL || 'nomic-embed-text');
+223:   const ragIngester = new RagIngester(vectorStore, provider, process.env.RAG_EMBEDDING_MODEL || 'nomic-embed-text');
+224: 
+225:   // Register RAG Tools
+226:   const { RagIngestTool, RagSearchTool } = require('./tools/native/rag/index');
+227:   toolRegistry.register(new RagIngestTool(ragIngester));
+228:   toolRegistry.register(new RagSearchTool(ragService));
+229: 
+230:   const orchestrator = new AgentOrchestrator({
+231:     provider,
+232:     toolRegistry,
+233:     permissionManager,
+234:     fastModel,
+235:     deepModel,
+236:     ragService
+237:   });
+238: 
+239:   const toolContext: ToolContext = {
+240:     workspace: process.cwd(),
+241:     permissions: {
+242:       canExecuteRestricted: false,
+243:       autoConfirm: false // Must be false for real permission checking
+244:     }
+245:   };
+246: 
+247:   const server = new VayrisServer(orchestrator, toolContext, permissionManager, memoryStore, 3000);
+248: 
+249:   orchestrator.onTaskEvent((event) => {
+250:     // Simple event logging for UX
+251:     switch (event.type) {
+252:       case 'TASK_STARTED':
+253:         console.log(`\n[Task Started] ${event.data.goal}`);
+254:         break;
+255:       case 'PLAN_CREATED':
+256:         console.log(`[Plan Created] ${event.data.steps.length} steps.`);
+257:         break;
+258:       case 'TOOL_CALLED':
+259:         console.log(`[Tool Called] ${event.data.tool}`);
+260:         break;
+261:       case 'STEP_FAILED':
+262:         console.log(`[Step Failed] ${event.data.tool}: ${event.data.error}`);
+263:         break;
+264:       case 'TASK_COMPLETED':
+265:         console.log(`\n[Task Completed]`);
+266:         break;
+267:       case 'TASK_FAILED':
+268:         console.log(`\n[Task Failed] ${event.data.reason}`);
+269:         break;
+270:       case 'TASK_CANCELLED':
+271:         console.log(`\n[Task Cancelled]`);
+272:         break;
+273:     }
+274:   });
+275: 
+276:   console.log('\nVAYRIS is ready. Local Server is running. CLI is still active (enter your goal, or "exit" to quit).');
+277: 
+278:   const askQuestion = () => {
+279:     rl.question('\n> ', async (input) => {
+280:       if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'quit') {
+281:         rl.close();
+282:         await mcpManager.disconnectAll();
+283:         await memoryStore.close();
+284:         await browserManager.close();
+285:         server.close();
+286:         return;
+287:       }
+288: 
+289:       if (input.trim() === '') {
+290:         askQuestion();
+291:         return;
+292:       }
+293: 
+294:       try {
+295:         const result = await orchestrator.runTask(input, toolContext);
+296:         if (result.metadata.finalResponse) {
+297:           console.log(`\nVAYRIS: ${result.metadata.finalResponse}`);
+298:         }
+299:       } catch (error: any) {
+300:         console.error(`\nError: ${error.message}`);
+301:       }
+302: 
+303:       askQuestion();
+304:     });
+305:   };
+306: 
+307:   askQuestion();
+308: }
+309: 
+310: if (require.main === module) {
+311:   main().catch(async (error) => {
+312:     console.error(error);
+313:     process.exit(1);
+314:   });
+315: }
+316: 
+The above content shows the entire, complete file contents of the requested file.
+
+==================
+Created At: 2026-09-03T19:12:28+05:30
+Completed At: 2026-09-03T19:12:28+05:30
+File Path: `file:///e:/Jarvis/src/index.ts`
+Total Lines: 320
+Total Bytes: 11575
+Showing lines 1 to 320
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: /*
+2:  * Copyright 2026 Devansh Lamba
+3:  *
+4:  * Licensed under the Apache License, Version 2.0.
+5:  * You may obtain a copy of the License at
+6:  *
+7:  * http://www.apache.org/licenses/LICENSE-2.0
+8:  */
+9: import dotenv from 'dotenv';
+10: import fs from 'fs';
+11: import path from 'path';
+12: import * as readline from 'readline';
+13: 
+14: import { AgentOrchestrator } from './core/orchestrator';
+15: import { OpenAICompatibleProvider } from './providers/openai';
+16: import { providerRegistry } from './providers/registry';
+17: import { toolRegistry } from './tools/registry';
+18: import { SaveMemoryTool, SearchMemoryTool } from './tools/native/memoryTools';
+19: import { ToolContext } from './tools/types';
+20: import { MCPManager } from './mcp/manager';
+21: import { DefaultPermissionManager } from './core/permissions';
+22: import { ServerPermissionManager } from './core/server_permissions';
+23: import { VayrisServer } from './server';
+24: import { SQLiteMemoryStore } from './memory/store';
+25: import { SQLiteVectorStore } from './rag/storage';
+26: import { RagService } from './rag/service';
+27: import { RagIngester } from './rag/ingestion';
+28: import sqlite3 from 'sqlite3';
+29: import { open } from 'sqlite';
+30: 
+31: import { FileSystemSecurity } from './tools/native/filesystem/utils';
+32: import { ListDirectoryTool } from './tools/native/filesystem/list_directory';
+33: import { ReadFileTool } from './tools/native/filesystem/read_file';
+34: import { SearchFilesTool } from './tools/native/filesystem/search_files';
+35: import { WriteFileTool } from './tools/native/filesystem/write_file';
+36: import { DeleteFileTool } from './tools/native/filesystem/delete_file';
+37: import { SystemInfoTool } from './tools/native/system/system_info';
+38: import { SystemTimeTool } from './tools/native/system/system_time';
+39: import { OpenApplicationTool } from './tools/native/applications/open_application';
+40: 
+41: import { browserManager } from './browser/manager';
+42: import { 
+43:   BrowserOpenTool, BrowserReadPageTool, BrowserFindTool, 
+44:   BrowserClickTool, BrowserTypeTool, BrowserScreenshotTool, BrowserGoBackTool 
+45: } from './tools/native/browser/browser_tools';
+46: 
+47: import {
+48:   GitStatusTool, GitDiffTool, ProjectInfoTool, RunTestsTool, RunBuildTool
+49: } from './tools/native/developer/developer_tools';
+50: 
+51: // Load environment variables
+52: dotenv.config();
+53: 
+54: async function main() {
+55:   console.log('Initializing VAYRIS...');
+56: 
+57:   // Pre-index installed Windows applications in the background
+58:   const { warmUpAppCache } = require('./tools/native/applications/launcher');
+59:   warmUpAppCache();
+60: 
+61:   // 0. Initialize Security & Storage
+62:   const allowedRoots = [process.env.VAYRIS_WORKSPACE || process.cwd()];
+63:   const fsSecurity = new FileSystemSecurity(allowedRoots);
+64:   
+65:   const memoryDbPath = path.resolve(process.cwd(), 'vayris_memory.db');
+66:   const memoryStore = new SQLiteMemoryStore(memoryDbPath);
+67: 
+68:   const ragDbPath = path.resolve(process.cwd(), 'vayris_rag.db');
+69:   const ragDb = await open({
+70:     filename: ragDbPath,
+71:     driver: sqlite3.Database
+72:   });
+73:   const vectorStore = new SQLiteVectorStore(ragDb);
+74:   await vectorStore.initialize();
+75:   // 1. Initialize native tools
+76:   // FileSystem
+77:   toolRegistry.register(new ListDirectoryTool(fsSecurity));
+78:   toolRegistry.register(new ReadFileTool(fsSecurity));
+79:   toolRegistry.register(new SearchFilesTool(fsSecurity));
+80:   toolRegistry.register(new WriteFileTool(fsSecurity));
+81:   toolRegistry.register(new DeleteFileTool(fsSecurity));
+82:   
+83:   // System
+84:   toolRegistry.register(new SystemInfoTool());
+85:   toolRegistry.register(new SystemTimeTool());
+86:   
+87:   const { CaptureScreenTool } = require('./tools/native/system/capture_screen');
+88:   const { AnalyzeImageTool } = require('./tools/native/system/analyze_image');
+89:   toolRegistry.register(new CaptureScreenTool());
+90:   toolRegistry.register(new AnalyzeImageTool());
+91:   
+92:   // Applications
+93:   toolRegistry.register(new OpenApplicationTool());
+94: 
+95:   // Browser
+96:   toolRegistry.register(new BrowserOpenTool(browserManager));
+97:   toolRegistry.register(new BrowserReadPageTool(browserManager));
+98:   toolRegistry.register(new BrowserFindTool(browserManager));
+99:   toolRegistry.register(new BrowserClickTool(browserManager));
+100:   toolRegistry.register(new BrowserTypeTool(browserManager));
+101:   toolRegistry.register(new BrowserScreenshotTool(browserManager));
+102:   toolRegistry.register(new BrowserGoBackTool(browserManager));
+103:   const { BrowserCloseTool } = await import('./tools/native/browser/browser_tools');
+104:   toolRegistry.register(new BrowserCloseTool(browserManager));
+105: 
+106:   // Developer
+107:   toolRegistry.register(new GitStatusTool(fsSecurity));
+108:   toolRegistry.register(new GitDiffTool(fsSecurity));
+109:   toolRegistry.register(new ProjectInfoTool(fsSecurity));
+110:   toolRegistry.register(new RunTestsTool(fsSecurity));
+111:   toolRegistry.register(new RunBuildTool(fsSecurity));
+112:   
+113:   // Memory
+114:   toolRegistry.register(new SaveMemoryTool(memoryStore));
+115:   toolRegistry.register(new SearchMemoryTool(memoryStore));
+116: 
+117:   // Productivity
+118:   const { ProductivityStorage } = require('./tools/native/productivity/storage');
+119:   await ProductivityStorage.getInstance().initialize();
+120:   const { productivityTools } = require('./tools/native/productivity/tools');
+121:   for (const t of productivityTools) toolRegistry.register(t);
+122:   
+123:   const { ProductivityScheduler } = require('./tools/native/productivity/scheduler');
+124:   ProductivityScheduler.getInstance().start();
+125: 
+126:   // 2. Initialize MCP Manager and load external tools
+127:   const mcpManager = new MCPManager(toolRegistry);
+128:   
+129:   const mcpConfigPath = path.resolve(process.cwd(), 'mcp.config.json');
+130:   if (fs.existsSync(mcpConfigPath)) {
+131:     try {
+132:       console.log('Loading MCP servers from configuration...');
+133:       const configData = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
+134:       
+135:       if (configData.mcpServers) {
+136:         for (const [name, serverConfig] of Object.entries<any>(configData.mcpServers)) {
+137:           await mcpManager.registerServer({
+138:             name,
+139:             command: serverConfig.command,
+140:             args: serverConfig.args,
+141:             env: serverConfig.env,
+142:           });
+143:         }
+144:       }
+145:     } catch (error: any) {
+146:       console.warn(`Warning: Failed to load MCP configuration: ${error.message}`);
+147:     }
+148:   } else {
+149:     console.log('No mcp.config.json found. Skipping MCP initialization.');
+150:   }
+151: 
+152:   // 3. Initialize provider
+153:   const providerName = process.env.VAYRIS_PROVIDER;
+154:   if (!providerName) {
+155:     console.log('\nNo model provider is configured.');
+156:     console.log('Configure the required environment variables (VAYRIS_PROVIDER, VAYRIS_MODEL, etc.) before starting Vayris.\n');
+157:     process.exit(1);
+158:   }
+159: 
+160:   // Register providers
+161:   providerRegistry.register(new OpenAICompatibleProvider());
+162:   const { GeminiProvider } = require('./providers/gemini/index');
+163:   providerRegistry.register(new GeminiProvider());
+164: 
+165:   let provider: any;
+166:   try {
+167:     provider = providerRegistry.getProvider(providerName);
+168:   } catch (e: any) {
+169:     console.log(`\nError: ${e.message}\n`);
+170:     process.exit(1);
+171:   }
+172: 
+173:   const fastModel = process.env.FAST_MODEL;
+174:   const deepModel = process.env.DEEP_MODEL;
+175:   
+176:   if (!fastModel || !deepModel) {
+177:     console.error('\nError: FAST_MODEL and DEEP_MODEL must be configured in your .env file.');
+178:     console.error('See .env.example for an example configuration.\n');
+179:     process.exit(1);
+180:   }
+181: 
+182:   const modelName = fastModel;
+183:   
+184:   provider.initialize({
+185:     model: modelName,
+186:     apiKey: process.env.VAYRIS_API_KEY,
+187:     baseUrl: process.env.LOCAL_MODEL_BASE_URL || process.env.VAYRIS_BASE_URL
+188:   });
+189: 
+190:   console.log(`\nProvider: ${providerName}\nStatus: verifying connection...`);
+191:   try {
+192:     await provider.checkConnection();
+193:     console.log('Status: connected\n');
+194:     
+195:     if (provider.checkModelAvailability) {
+196:       console.log(`Verifying models...`);
+197:       const missing = await provider.checkModelAvailability([fastModel, deepModel]);
+198:       if (missing.length > 0) {
+199:         console.error(`\nError: The following models are missing from your provider (${providerName}):`);
+200:         missing.forEach((m: string) => console.error(`  - ${m}`));
+201:         console.error('\nPlease pull or install these models before continuing, or update your .env to use models that are currently available.');
+202:         console.error('Example: ollama pull ' + missing[0] + '\n');
+203:         process.exit(1);
+204:       }
+205:       console.log(`Models verified: ${fastModel} (FAST), ${deepModel} (DEEP)\n`);
+206:     }
+207:   } catch (e: any) {
+208:     console.log(`Status: error (${e.message})\n`);
+209:     console.log('Please check your provider configuration (baseUrl, API key, etc).\n');
+210:     process.exit(1);
+211:   }
+212: 
+213:   // 4. Interactive CLI loop setup
+214:   const rl = readline.createInterface({
+215:     input: process.stdin,
+216:     output: process.stdout
+217:   });
+218: 
+219:   // 5. Initialize Server Permission Manager
+220:   const basePermissionManager = new ServerPermissionManager();
+221: 
+222:   const ragService = new RagService(vectorStore, provider, process.env.RAG_EMBEDDING_MODEL || 'nomic-embed-text');
+223:   const ragIngester = new RagIngester(vectorStore, provider, process.env.RAG_EMBEDDING_MODEL || 'nomic-embed-text');
+224: 
+225:   // Register RAG Tools
+226:   const { RagIngestTool, RagSearchTool } = require('./tools/native/rag/index');
+227:   toolRegistry.register(new RagIngestTool(ragIngester));
+228:   toolRegistry.register(new RagSearchTool(ragService));
+229: 
+230:   const { GuardrailsPermissionManager } = require('./core/guardrails');
+231:   const permissionManager = new GuardrailsPermissionManager(basePermissionManager);
+232: 
+233: 
+234:   const orchestrator = new AgentOrchestrator({
+235:     provider,
+236:     toolRegistry,
+237:     permissionManager,
+238:     fastModel,
+239:     deepModel,
+240:     ragService
+241:   });
+242: 
+243:   const toolContext: ToolContext = {
+244:     workspace: process.cwd(),
+245:     permissions: {
+246:       canExecuteRestricted: false,
+247:       autoConfirm: false // Must be false for real permission checking
+248:     }
+249:   };
+250: 
+251:   const server = new VayrisServer(orchestrator, toolContext, permissionManager, memoryStore, 3000);
+252: 
+253:   orchestrator.onTaskEvent((event) => {
+254:     // Simple event logging for UX
+255:     switch (event.type) {
+256:       case 'TASK_STARTED':
+257:         console.log(`\n[Task Started] ${event.data.goal}`);
+258:         break;
+259:       case 'PLAN_CREATED':
+260:         console.log(`[Plan Created] ${event.data.steps.length} steps.`);
+261:         break;
+262:       case 'TOOL_CALLED':
+263:         console.log(`[Tool Called] ${event.data.tool}`);
+264:         break;
+265:       case 'STEP_FAILED':
+266:         console.log(`[Step Failed] ${event.data.tool}: ${event.data.error}`);
+267:         break;
+268:       case 'TASK_COMPLETED':
+269:         console.log(`\n[Task Completed]`);
+270:         break;
+271:       case 'TASK_FAILED':
+272:         console.log(`\n[Task Failed] ${event.data.reason}`);
+273:         break;
+274:       case 'TASK_CANCELLED':
+275:         console.log(`\n[Task Cancelled]`);
+276:         break;
+277:     }
+278:   });
+279: 
+280:   console.log('\nVAYRIS is ready. Local Server is running. CLI is still active (enter your goal, or "exit" to quit).');
+281: 
+282:   const askQuestion = () => {
+283:     rl.question('\n> ', async (input) => {
+284:       if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'quit') {
+285:         rl.close();
+286:         await mcpManager.disconnectAll();
+287:         await memoryStore.close();
+288:         await browserManager.close();
+289:         server.close();
+290:         return;
+291:       }
+292: 
+293:       if (input.trim() === '') {
+294:         askQuestion();
+295:         return;
+296:       }
+297: 
+298:       try {
+299:         const result = await orchestrator.runTask(input, toolContext);
+300:         if (result.metadata.finalResponse) {
+301:           console.log(`\nVAYRIS: ${result.metadata.finalResponse}`);
+302:         }
+303:       } catch (error: any) {
+304:         console.error(`\nError: ${error.message}`);
+305:       }
+306: 
+307:       askQuestion();
+308:     });
+309:   };
+310: 
+311:   askQuestion();
+312: }
+313: 
+314: if (require.main === module) {
+315:   main().catch(async (error) => {
+316:     console.error(error);
+317:     process.exit(1);
+318:   });
+319: }
+320: 
+The above content shows the entire, complete file contents of the requested file.
+
+==================
+Created At: 2026-09-03T20:24:45+05:30
+Completed At: 2026-09-03T20:24:45+05:30
+File Path: `file:///e:/Jarvis/src/index.ts`
+Total Lines: 320
+Total Bytes: 11579
+Showing lines 1 to 100
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: /*
+2:  * Copyright 2026 Devansh Lamba
+3:  *
+4:  * Licensed under the Apache License, Version 2.0.
+5:  * You may obtain a copy of the License at
+6:  *
+7:  * http://www.apache.org/licenses/LICENSE-2.0
+8:  */
+9: import dotenv from 'dotenv';
+10: import fs from 'fs';
+11: import path from 'path';
+12: import * as readline from 'readline';
+13: 
+14: import { AgentOrchestrator } from './core/orchestrator';
+15: import { OpenAICompatibleProvider } from './providers/openai';
+16: import { providerRegistry } from './providers/registry';
+17: import { toolRegistry } from './tools/registry';
+18: import { SaveMemoryTool, SearchMemoryTool } from './tools/native/memoryTools';
+19: import { ToolContext } from './tools/types';
+20: import { MCPManager } from './mcp/manager';
+21: import { DefaultPermissionManager } from './core/permissions';
+22: import { ServerPermissionManager } from './core/server_permissions';
+23: import { VayrisServer } from './server';
+24: import { SQLiteMemoryStore } from './memory/store';
+25: import { SQLiteVectorStore } from './rag/storage';
+26: import { RagService } from './rag/service';
+27: import { RagIngester } from './rag/ingestion';
+28: import sqlite3 from 'sqlite3';
+29: import { open } from 'sqlite';
+30: 
+31: import { FileSystemSecurity } from './tools/native/filesystem/utils';
+32: import { ListDirectoryTool } from './tools/native/filesystem/list_directory';
+33: import { ReadFileTool } from './tools/native/filesystem/read_file';
+34: import { SearchFilesTool } from './tools/native/filesystem/search_files';
+35: import { WriteFileTool } from './tools/native/filesystem/write_file';
+36: import { DeleteFileTool } from './tools/native/filesystem/delete_file';
+37: import { SystemInfoTool } from './tools/native/system/system_info';
+38: import { SystemTimeTool } from './tools/native/system/system_time';
+39: import { OpenApplicationTool } from './tools/native/applications/open_application';
+40: 
+41: import { browserManager } from './browser/manager';
+42: import { 
+43:   BrowserOpenTool, BrowserReadPageTool, BrowserFindTool, 
+44:   BrowserClickTool, BrowserTypeTool, BrowserScreenshotTool, BrowserGoBackTool 
+45: } from './tools/native/browser/browser_tools';
+46: 
+47: import {
+48:   GitStatusTool, GitDiffTool, ProjectInfoTool, RunTestsTool, RunBuildTool
+49: } from './tools/native/developer/developer_tools';
+50: 
+51: // Load environment variables
+52: dotenv.config();
+53: 
+54: async function main() {
+55:   console.log('Initializing VAYRIS...');
+56: 
+57:   // Pre-index installed Windows applications in the background
+58:   const { warmUpAppCache } = require('./tools/native/applications/launcher');
+59:   warmUpAppCache();
+60: 
+61:   // 0. Initialize Security & Storage
+62:   const allowedRoots = [process.env.VAYRIS_WORKSPACE || process.cwd()];
+63:   const fsSecurity = new FileSystemSecurity(allowedRoots);
+64:   
+65:   const memoryDbPath = path.resolve(process.cwd(), 'vayris_memory.db');
+66:   const memoryStore = new SQLiteMemoryStore(memoryDbPath);
+67: 
+68:   const ragDbPath = path.resolve(process.cwd(), 'vayris_rag.db');
+69:   const ragDb = await open({
+70:     filename: ragDbPath,
+71:     driver: sqlite3.Database
+72:   });
+73:   const vectorStore = new SQLiteVectorStore(ragDb);
+74:   await vectorStore.initialize();
+75:   // 1. Initialize native tools
+76:   // FileSystem
+77:   toolRegistry.register(new ListDirectoryTool(fsSecurity));
+78:   toolRegistry.register(new ReadFileTool(fsSecurity));
+79:   toolRegistry.register(new SearchFilesTool(fsSecurity));
+80:   toolRegistry.register(new WriteFileTool(fsSecurity));
+81:   toolRegistry.register(new DeleteFileTool(fsSecurity));
+82:   
+83:   // System
+84:   toolRegistry.register(new SystemInfoTool());
+85:   toolRegistry.register(new SystemTimeTool());
+86:   
+87:   const { CaptureScreenTool } = require('./tools/native/system/capture_screen');
+88:   const { AnalyzeImageTool } = require('./tools/native/system/analyze_image');
+89:   toolRegistry.register(new CaptureScreenTool());
+90:   toolRegistry.register(new AnalyzeImageTool());
+91:   
+92:   // Applications
+93:   toolRegistry.register(new OpenApplicationTool());
+94: 
+95:   // Browser
+96:   toolRegistry.register(new BrowserOpenTool(browserManager));
+97:   toolRegistry.register(new BrowserReadPageTool(browserManager));
+98:   toolRegistry.register(new BrowserFindTool(browserManager));
+99:   toolRegistry.register(new BrowserClickTool(browserManager));
+100:   toolRegistry.register(new BrowserTypeTool(browserManager));
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+==================
+Created At: 2026-09-10T12:02:42+05:30
+Completed At: 2026-09-10T12:02:49+05:30
+
+The command exited with code 0.
+Output:
+Created At: 2026-09-03T19:10:45+05:30
+Completed At: 2026-09-03T19:10:45+05:30
+File Path: `file:///e:/Jarvis/src/index.ts`
+Total Lines: 316
+Total Bytes: 11413
+Showing lines 1 to 316
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: /*
+2:  * Copyright 2026 Devansh Lamba
+3:  *
+4:  * Licensed under the Apach
+Created At: 2026-09-03T19:12:28+05:30
+Completed At: 2026-09-03T19:12:28+05:30
+File Path: `file:///e:/Jarvis/src/index.ts`
+Total Lines: 320
+Total Bytes: 11575
+Showing lines 1 to 320
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: /*
+2:  * Copyright 2026 Devansh Lamba
+3:  *
+4:  * Licensed under the Apach
+Created At: 2026-09-03T20:24:45+05:30
+Completed At: 2026-09-03T20:24:45+05:30
+File Path: `file:///e:/Jarvis/src/index.ts`
+Total Lines: 320
+Total Bytes: 11579
+Showing lines 1 to 100
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: /*
+2:  * Copyright 2026 Devansh Lamba
+3:  *
+4:  * Licensed under the Apach
+
+
+==================

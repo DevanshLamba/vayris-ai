@@ -1,0 +1,45 @@
+{
+  "name": "vayris",
+  "version": "1.0.0",
+  "description": "VAYRIS - An open-source, model-independent personal AI agent.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && npm run build --prefix ui",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "dev:ui": "npm run dev --prefix ui",
+    "test": "jest"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "orchestrator",
+    "vayris"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "open": "^11.0.1",
+    "playwright": "^1.62.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^6.0.1",
+    "ws": "^8.21.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.12.7",
+    "@types/ws": "^8.18.1",
+    "csv-parse": "^7.0.2",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

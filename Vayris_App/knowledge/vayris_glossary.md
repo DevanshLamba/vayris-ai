@@ -1,0 +1,21 @@
+# Vayris Glossary
+
+- **FAST**: The Vayris execution mode optimized for low-latency communication using the llama3.2:1b model.
+- **DEEP**: The Vayris execution mode tailored for complex reasoning and tool usage using the qwen3:4b model.
+- **AUTO**: The dynamic routing mode that uses heuristic and regex parsing to decide between deterministic actions, FAST mode, or DEEP mode.
+- **RAG**: An optional, shared knowledge layer that retrieves relevant Markdown and codebase context from local SQLite vector storage before model execution.
+- **Knowledge Base**: The collection of manually curated markdown files providing high-level semantic context for Vayris.
+- **Embedding**: The mathematical representation of a text string (generated locally via nomic-embed-text) used for similarity searches within the vector store.
+- **Vector Store**: A local SQLite database (`vayris_rag.db`) containing text chunks and their embeddings for retrieval.
+- **Retriever**: The component (`RagService`) responsible for identifying knowledge queries and fetching context from the vector store.
+- **TaskEngine**: The engine responsible for executing DEEP agent tasks, managing loops, tools, and execution state.
+- **AgentOrchestrator**: The central orchestrator that receives user inputs and routes them to TaskEngine or direct FAST inference.
+- **MCP**: Model Context Protocol, supported to enable Vayris to interact with standardized external tools.
+- **BrowserManager**: The component handling local browser interactions such as opening tabs or fetching page content.
+- **Application Resolver**: The system responsible for indexing native applications on the host OS and resolving user requests to application paths deterministically.
+- **Core Identity**: The immutable identity layer providing Vayris with base parameters like its name and creator, injected directly into the LLM system prompt independently of RAG.
+- **Memory**: The system for preserving persistent evolving conversational context across sessions (distinct from the static RAG Knowledge Base).
+- **Tool**: A function or capability exposed to the DEEP agent (or triggered deterministically) to execute real-world actions.
+- **Deterministic Action**: An operation executed directly by the router using code (e.g., launching apps, checking time) without querying the LLM.
+- **Streaming**: Delivering text responses to the user chunk-by-chunk in real time for responsive perceived latency.
+- **Cancellation**: A first-class capability to immediately halt model generation, tool execution, or agent task loops.

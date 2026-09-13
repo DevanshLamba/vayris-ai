@@ -1,0 +1,1 @@
+export function extractToolCallFromText(text: string) { try { const match = text.match(/`json\n([\s\S]*?)\n`/); if (match) return JSON.parse(match[1]); } catch(e) {} return null; }
