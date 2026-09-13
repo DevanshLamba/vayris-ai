@@ -2,6 +2,7 @@
   <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/readme-logo.png" alt="Vayris AI Logo" width="200" />
   <h1>Vayris AI</h1>
   <p><b>An Advanced Local-First Agentic Operating Environment</b></p>
+  <p>🌐 <a href="https://vayris-website.vercel.app/"><b>Visit the Official Website</b></a></p>
   
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
   [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
