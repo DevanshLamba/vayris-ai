@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/logo-full.png" alt="Vayris AI Logo" width="200" />
+  <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/readme-logo.png" alt="Vayris AI Logo" width="200" />
   <h1>Vayris AI</h1>
   <p><b>An Advanced Local-First Agentic Operating Environment</b></p>
   
