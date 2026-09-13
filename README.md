@@ -82,11 +82,30 @@ graph TD
 
 ## 📸 Interface Preview
 
-Vayris features a highly atmospheric, glassmorphic 3D interface that provides real-time telemetry on model states (Fast vs. Deep) and system activity.
+Vayris features a highly atmospheric, immersive interface that provides real-time telemetry on model states (Fast vs. Deep) and agentic activity.
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/vayris-preview.jpg" alt="Vayris AI Interface Preview" width="800" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
-</div>
+<table align="center">
+  <tr>
+    <td>
+      <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/screenshots/welcome_screen.png" alt="Welcome Screen" width="400"/>
+      <br><em>Interactive Orb & Fast Input</em>
+    </td>
+    <td>
+      <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/screenshots/chat_tasks.png" alt="Chat & Tasks" width="400"/>
+      <br><em>Direct Chat & Task Parsing</em>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/screenshots/active_processing.png" alt="Deep Agentic Engine" width="400"/>
+      <br><em>Deep Agentic Execution Sidebar</em>
+    </td>
+    <td>
+      <img src="https://raw.githubusercontent.com/DevanshLamba/vayris-ai/main/Vayris_App/ui/public/screenshots/security_modal.png" alt="Security Guardrails" width="400"/>
+      <br><em>Zero-Trust Security & Approvals</em>
+    </td>
+  </tr>
+</table>
 
 ---
 
